@@ -2983,8 +2983,8 @@ func (r *usageLogRepository) GetBatchAPIKeyUsageStats(ctx context.Context, apiKe
 			api_key_id,
 			COALESCE(SUM(actual_cost) FILTER (WHERE created_at >= $2 AND created_at < $3), 0) as total_cost,
 			COALESCE(SUM(actual_cost) FILTER (WHERE created_at >= $4), 0) as today_cost,
-			COALESCE(SUM(total_tokens) FILTER (WHERE created_at >= $2 AND created_at < $3), 0) as total_tokens,
-			COALESCE(SUM(total_tokens) FILTER (WHERE created_at >= $4), 0) as today_tokens
+			COALESCE(SUM(input_tokens + output_tokens + cache_creation_tokens + cache_read_tokens) FILTER (WHERE created_at >= $2 AND created_at < $3), 0) as total_tokens,
+			COALESCE(SUM(input_tokens + output_tokens + cache_creation_tokens + cache_read_tokens) FILTER (WHERE created_at >= $4), 0) as today_tokens
 		FROM usage_logs
 		WHERE api_key_id = ANY($1)
 		  AND created_at >= LEAST($2, $4)

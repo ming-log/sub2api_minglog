@@ -109,6 +109,7 @@ export default defineConfig(({ mode }) => {
     server: {
       host: '0.0.0.0',
       port: devPort,
+      allowedHosts: ['sub2api.minglog.cn'],
       proxy: {
         '/api': {
           target: backendUrl,
