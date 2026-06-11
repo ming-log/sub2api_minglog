@@ -17,7 +17,7 @@ This local copy serves as a fallback when the remote file cannot be downloaded d
 
 ## Update Process
 The pricingService will:
-1. First attempt to download the latest version from GitHub
+1. First attempt to download pricing data from GitHub
 2. If download fails, use this local copy as fallback
 3. Log a warning when using the fallback file
 

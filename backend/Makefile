@@ -1,7 +1,6 @@
 .PHONY: build generate test test-unit test-integration test-e2e
 
-VERSION ?= $(shell tr -d '\r\n' < ./cmd/server/VERSION)
-LDFLAGS ?= -s -w -X main.Version=$(VERSION)
+LDFLAGS ?= -s -w
 
 build:
 	CGO_ENABLED=0 go build -ldflags="$(LDFLAGS)" -trimpath -o bin/server ./cmd/server

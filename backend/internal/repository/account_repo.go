@@ -584,12 +584,18 @@ func (r *accountRepository) ListWithFilters(ctx context.Context, params paginati
 
 func accountListOrder(params pagination.PaginationParams) []func(*entsql.Selector) {
 	sortBy := strings.ToLower(strings.TrimSpace(params.SortBy))
+	defaultSort := sortBy == ""
 	sortOrder := params.NormalizedSortOrder(pagination.SortOrderAsc)
+	if defaultSort {
+		sortOrder = pagination.SortOrderDesc
+	}
 
-	field := dbaccount.FieldName
+	field := dbaccount.FieldCreatedAt
 	defaultOrder := true
 	switch sortBy {
-	case "", "name":
+	case "":
+		field = dbaccount.FieldCreatedAt
+	case "name":
 		field = dbaccount.FieldName
 	case "id":
 		field = dbaccount.FieldID

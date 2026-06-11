@@ -7,11 +7,6 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { Toast, ToastType, PublicSettings } from '@/types'
 import { i18n } from '@/i18n'
-import {
-  checkUpdates as checkUpdatesAPI,
-  type VersionInfo,
-  type ReleaseInfo
-} from '@/api/admin/system'
 import { getPublicSettings as fetchPublicSettingsAPI } from '@/api/auth'
 
 export const useAppStore = defineStore('app', () => {
@@ -27,20 +22,10 @@ export const useAppStore = defineStore('app', () => {
   const publicSettingsLoading = ref<boolean>(false)
   const siteName = ref<string>('Sub2API')
   const siteLogo = ref<string>('')
-  const siteVersion = ref<string>('')
   const contactInfo = ref<string>('')
   const apiBaseUrl = ref<string>('')
   const docUrl = ref<string>('')
   const cachedPublicSettings = ref<PublicSettings | null>(null)
-
-  // Version cache state
-  const versionLoaded = ref<boolean>(false)
-  const versionLoading = ref<boolean>(false)
-  const currentVersion = ref<string>('')
-  const latestVersion = ref<string>('')
-  const hasUpdate = ref<boolean>(false)
-  const buildType = ref<string>('source')
-  const releaseInfo = ref<ReleaseInfo | null>(null)
 
   // Auto-incrementing ID for toasts
   let toastIdCounter = 0
@@ -232,56 +217,6 @@ export const useAppStore = defineStore('app', () => {
     toasts.value = []
   }
 
-  // ==================== Version Management ====================
-
-  /**
-   * Fetch version info (uses cache unless force=true)
-   * @param force - Force refresh from API
-   */
-  async function fetchVersion(force = false): Promise<VersionInfo | null> {
-    // Return cached data if available and not forcing refresh
-    if (versionLoaded.value && !force) {
-      return {
-        current_version: currentVersion.value,
-        latest_version: latestVersion.value,
-        has_update: hasUpdate.value,
-        build_type: buildType.value,
-        release_info: releaseInfo.value || undefined,
-        cached: true
-      }
-    }
-
-    // Prevent duplicate requests
-    if (versionLoading.value) {
-      return null
-    }
-
-    versionLoading.value = true
-    try {
-      const data = await checkUpdatesAPI(force)
-      currentVersion.value = data.current_version
-      latestVersion.value = data.latest_version
-      hasUpdate.value = data.has_update
-      buildType.value = data.build_type || 'source'
-      releaseInfo.value = data.release_info || null
-      versionLoaded.value = true
-      return data
-    } catch (error) {
-      console.error('Failed to fetch version:', error)
-      return null
-    } finally {
-      versionLoading.value = false
-    }
-  }
-
-  /**
-   * Clear version cache (e.g., after update)
-   */
-  function clearVersionCache(): void {
-    versionLoaded.value = false
-    hasUpdate.value = false
-  }
-
   // ==================== Public Settings Management ====================
 
   /**
@@ -294,7 +229,6 @@ export const useAppStore = defineStore('app', () => {
     cachedPublicSettings.value = config
     siteName.value = config.site_name || 'Sub2API'
     siteLogo.value = config.site_logo || ''
-    siteVersion.value = config.version || ''
     contactInfo.value = config.contact_info || ''
     apiBaseUrl.value = config.api_base_url || ''
     docUrl.value = config.doc_url || ''
@@ -350,7 +284,6 @@ export const useAppStore = defineStore('app', () => {
         github_oauth_enabled: false,
         google_oauth_enabled: false,
         backend_mode_enabled: false,
-        version: siteVersion.value,
         balance_low_notify_enabled: false,
         account_quota_notify_enabled: false,
         balance_low_notify_threshold: 0,
@@ -416,20 +349,10 @@ export const useAppStore = defineStore('app', () => {
     publicSettingsLoaded,
     siteName,
     siteLogo,
-    siteVersion,
     contactInfo,
     apiBaseUrl,
     docUrl,
     cachedPublicSettings,
-
-    // Version state
-    versionLoaded,
-    versionLoading,
-    currentVersion,
-    latestVersion,
-    hasUpdate,
-    buildType,
-    releaseInfo,
 
     // Computed
     hasActiveToasts,
@@ -451,10 +374,6 @@ export const useAppStore = defineStore('app', () => {
     withLoading,
     withLoadingAndError,
     reset,
-
-    // Version actions
-    fetchVersion,
-    clearVersionCache,
 
     // Public settings actions
     fetchPublicSettings,

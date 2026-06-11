@@ -4,20 +4,17 @@ package main
 
 import (
 	"context"
-	_ "embed"
 	"errors"
 	"flag"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
-	"strings"
 	"syscall"
 	"time"
 
 	_ "github.com/Wei-Shaw/sub2api/ent/runtime"
 	"github.com/Wei-Shaw/sub2api/internal/config"
-	"github.com/Wei-Shaw/sub2api/internal/handler"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/logger"
 	"github.com/Wei-Shaw/sub2api/internal/server/middleware"
 	"github.com/Wei-Shaw/sub2api/internal/setup"
@@ -25,30 +22,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 )
-
-//go:embed VERSION
-var embeddedVersion string
-
-// Build-time variables (can be set by ldflags)
-var (
-	Version   = ""
-	Commit    = "unknown"
-	Date      = "unknown"
-	BuildType = "source" // "source" for manual builds, "release" for CI builds (set by ldflags)
-)
-
-func init() {
-	// 如果 Version 已通过 ldflags 注入（例如 -X main.Version=...），则不要覆盖。
-	if strings.TrimSpace(Version) != "" {
-		return
-	}
-
-	// 默认从 embedded VERSION 文件读取版本号（编译期打包进二进制）。
-	Version = strings.TrimSpace(embeddedVersion)
-	if Version == "" {
-		Version = "0.0.0-dev"
-	}
-}
 
 // initLogger configures the default slog handler based on gin.Mode().
 // In non-release mode, Debug level logs are enabled.
@@ -58,13 +31,7 @@ func main() {
 
 	// Parse command line flags
 	setupMode := flag.Bool("setup", false, "Run setup wizard in CLI mode")
-	showVersion := flag.Bool("version", false, "Show version information")
 	flag.Parse()
-
-	if *showVersion {
-		log.Printf("Sub2API %s (commit: %s, built: %s)\n", Version, Commit, Date)
-		return
-	}
 
 	// CLI setup mode
 	if *setupMode {
@@ -143,12 +110,7 @@ func runMainServer() {
 		log.Println("⚠️  WARNING: Running in SIMPLE mode - billing and quota checks are DISABLED")
 	}
 
-	buildInfo := handler.BuildInfo{
-		Version:   Version,
-		BuildType: BuildType,
-	}
-
-	app, err := initializeApplication(buildInfo)
+	app, err := initializeApplication()
 	if err != nil {
 		log.Fatalf("Failed to initialize application: %v", err)
 	}

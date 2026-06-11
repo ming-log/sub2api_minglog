@@ -250,6 +250,7 @@ export default {
   // Common
   common: {
     loading: 'Loading...',
+    login: 'Login',
     submitting: 'Submitting...',
     justNow: 'just now',
     save: 'Save',
@@ -2102,6 +2103,7 @@ export default {
       usageTotal: 'Total',
       accountsAvailable: 'Avail:',
       accountsRateLimited: 'Limited:',
+      accountsError: 'Error:',
       accountsTotal: 'Total:',
       accountsUnit: '',
       rateAndAccounts: '{rate}x rate · {count} accounts',
@@ -3015,10 +3017,12 @@ export default {
       dataImportParseFailed: 'Failed to parse data file',
       dataImportFailed: 'Data import failed',
       dataImportResult: 'Import Result',
-      dataImportResultSummary: 'Proxies created {proxy_created}, reused {proxy_reused}, failed {proxy_failed}; Accounts created {account_created}, failed {account_failed}',
+      dataImportResultSummary: 'Proxies created {proxy_created}, reused {proxy_reused}, failed {proxy_failed}; Accounts created {account_created}, updated {account_updated}, failed {account_failed}',
       dataImportErrors: 'Error Details',
-      dataImportSuccess: 'Import completed: accounts {account_created}, failed {account_failed}',
+      dataImportSuccess: 'Import completed: accounts created {account_created}, updated {account_updated}, failed {account_failed}',
       dataImportCompletedWithErrors: 'Import completed with errors: account failed {account_failed}, proxy failed {proxy_failed}',
+      dataImportConcurrency: 'Import concurrency',
+      dataImportPriority: 'Import priority',
       syncFromCrsTitle: 'Sync Accounts from CRS',
       syncFromCrsDesc:
         'Sync accounts from claude-relay-service (CRS) into this system (CRS is called server-to-server).',
@@ -6552,30 +6556,6 @@ export default {
     viewAll: 'View all subscriptions',
     noSubscriptions: 'No active subscriptions',
     unlimited: 'Unlimited'
-  },
-
-  // Version Badge
-  version: {
-    currentVersion: 'Current Version',
-    latestVersion: 'Latest Version',
-    upToDate: "You're running the latest version.",
-    updateAvailable: 'A new version is available!',
-    releaseNotes: 'Release Notes',
-    noReleaseNotes: 'No release notes',
-    viewUpdate: 'View Update',
-    viewRelease: 'View Release',
-    viewChangelog: 'View Changelog',
-    refresh: 'Refresh',
-    sourceMode: 'Source Build',
-    sourceModeHint: 'Source build, use git pull to update',
-    updateNow: 'Update Now',
-    updating: 'Updating...',
-    updateComplete: 'Update Complete',
-    updateFailed: 'Update Failed',
-    restartRequired: 'Please restart the service to apply the update',
-    restartNow: 'Restart Now',
-    restarting: 'Restarting...',
-    retry: 'Retry'
   },
 
   // Recharge / Subscription Page

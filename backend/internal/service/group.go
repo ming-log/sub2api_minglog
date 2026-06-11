@@ -75,6 +75,7 @@ type Group struct {
 	AccountCount            int64
 	ActiveAccountCount      int64
 	RateLimitedAccountCount int64
+	ErrorAccountCount       int64
 }
 
 func (g *Group) IsActive() bool {

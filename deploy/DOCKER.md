@@ -63,13 +63,6 @@ volumes:
 - `linux/amd64`
 - `linux/arm64`
 
-## Tags
-
-- `latest` - Latest stable release
-- `x.y.z` - Specific version
-- `x.y` - Latest patch of minor version
-- `x` - Latest minor of major version
-
 ## Links
 
 - [GitHub Repository](https://github.com/weishaw/sub2api)

@@ -275,3 +275,67 @@ func TestImportDataReusesProxyAndSkipsDefaultGroup(t *testing.T) {
 	require.Len(t, adminSvc.createdAccounts, 1)
 	require.True(t, adminSvc.createdAccounts[0].SkipDefaultGroupBind)
 }
+
+func TestImportDataUpdatesDuplicateAccountAndAppliesImportDefaults(t *testing.T) {
+	router, adminSvc := setupAccountDataRouter()
+	adminSvc.accounts = []service.Account{
+		{
+			ID:          42,
+			Name:        "old",
+			Platform:    service.PlatformOpenAI,
+			Type:        service.AccountTypeOAuth,
+			Credentials: map[string]any{"email": "same@example.com", "access_token": "old-token"},
+			Concurrency: 1,
+			Priority:    90,
+			Status:      service.StatusActive,
+		},
+	}
+
+	body, _ := json.Marshal(map[string]any{
+		"data": map[string]any{
+			"type":    dataType,
+			"version": dataVersion,
+			"proxies": []map[string]any{},
+			"accounts": []map[string]any{
+				{
+					"name":        "new",
+					"platform":    service.PlatformOpenAI,
+					"type":        service.AccountTypeOAuth,
+					"credentials": map[string]any{"email": "same@example.com", "access_token": "new-token"},
+					"concurrency": 2,
+					"priority":    80,
+				},
+			},
+		},
+		"concurrency": 7,
+		"priority":    12,
+		"group_ids":   []int64{5, 6},
+	})
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/admin/accounts/data", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(rec, req)
+	require.Equal(t, http.StatusOK, rec.Code)
+
+	var resp struct {
+		Code int              `json:"code"`
+		Data DataImportResult `json:"data"`
+	}
+	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &resp))
+	require.Equal(t, 0, resp.Code)
+	require.Equal(t, 0, resp.Data.AccountCreated)
+	require.Equal(t, 1, resp.Data.AccountUpdated)
+	require.Len(t, adminSvc.createdAccounts, 0)
+	require.Equal(t, []int64{42}, adminSvc.updatedAccountIDs)
+	require.Len(t, adminSvc.updatedAccounts, 1)
+
+	update := adminSvc.updatedAccounts[0]
+	require.Equal(t, "new", update.Name)
+	require.Equal(t, "new-token", update.Credentials["access_token"])
+	require.NotNil(t, update.Concurrency)
+	require.Equal(t, 7, *update.Concurrency)
+	require.NotNil(t, update.Priority)
+	require.Equal(t, 12, *update.Priority)
+	require.NotNil(t, update.GroupIDs)
+	require.Equal(t, []int64{5, 6}, *update.GroupIDs)
+}

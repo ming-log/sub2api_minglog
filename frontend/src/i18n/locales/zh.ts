@@ -250,6 +250,7 @@ export default {
   // Common
   common: {
     loading: '加载中...',
+    login: '登录',
     submitting: '提交中...',
     justNow: '刚刚',
     save: '保存',
@@ -2155,6 +2156,7 @@ export default {
       usageTotal: '累计',
       accountsAvailable: '可用:',
       accountsRateLimited: '限流:',
+      accountsError: '异常:',
       accountsTotal: '总量:',
       accountsUnit: '个账号',
       form: {
@@ -3091,10 +3093,12 @@ export default {
       dataImportParseFailed: '数据解析失败',
       dataImportFailed: '数据导入失败',
       dataImportResult: '导入结果',
-      dataImportResultSummary: '代理创建 {proxy_created}，复用 {proxy_reused}，失败 {proxy_failed}；账号创建 {account_created}，失败 {account_failed}',
+      dataImportResultSummary: '代理创建 {proxy_created}，复用 {proxy_reused}，失败 {proxy_failed}；账号创建 {account_created}，覆盖更新 {account_updated}，失败 {account_failed}',
       dataImportErrors: '失败详情',
-      dataImportSuccess: '导入完成：账号 {account_created}，失败 {account_failed}',
+      dataImportSuccess: '导入完成：账号创建 {account_created}，覆盖更新 {account_updated}，失败 {account_failed}',
       dataImportCompletedWithErrors: '导入完成但有错误：账号失败 {account_failed}，代理失败 {proxy_failed}',
+      dataImportConcurrency: '导入并发',
+      dataImportPriority: '导入优先级',
       syncFromCrsTitle: '从 CRS 同步账号',
       syncFromCrsDesc:
         '将 claude-relay-service（CRS）中的账号同步到当前系统（不会在浏览器侧直接请求 CRS）。',
@@ -6707,30 +6711,6 @@ export default {
     viewAll: '查看全部订阅',
     noSubscriptions: '暂无有效订阅',
     unlimited: '无限制'
-  },
-
-  // Version Badge
-  version: {
-    currentVersion: '当前版本',
-    latestVersion: '最新版本',
-    upToDate: '已是最新版本',
-    updateAvailable: '有新版本可用！',
-    releaseNotes: '更新日志',
-    noReleaseNotes: '暂无更新日志',
-    viewUpdate: '查看更新',
-    viewRelease: '查看发布',
-    viewChangelog: '查看更新日志',
-    refresh: '刷新',
-    sourceMode: '源码构建',
-    sourceModeHint: '源码构建请使用 git pull 更新',
-    updateNow: '立即更新',
-    updating: '正在更新...',
-    updateComplete: '更新完成',
-    updateFailed: '更新失败',
-    restartRequired: '请重启服务以应用更新',
-    restartNow: '立即重启',
-    restarting: '正在重启...',
-    retry: '重试'
   },
 
   // Recharge / Subscription Page

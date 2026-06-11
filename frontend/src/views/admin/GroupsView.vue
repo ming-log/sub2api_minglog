@@ -194,45 +194,42 @@
           </template>
 
           <template #cell-account_count="{ row }">
-            <div class="space-y-0.5 text-xs">
-              <div>
-                <span class="text-gray-500 dark:text-gray-400">{{
-                  t("admin.groups.accountsAvailable")
-                }}</span>
-                <span
-                  class="ml-1 font-medium text-emerald-600 dark:text-emerald-400"
-                  >{{ row.active_account_count || 0 }}</span
-                >
-                <span
-                  class="ml-1 inline-flex items-center rounded bg-gray-100 px-1.5 py-0.5 font-medium text-gray-800 dark:bg-dark-600 dark:text-gray-300"
-                  >{{ t("admin.groups.accountsUnit") }}</span
-                >
+            <div class="w-56 space-y-2 text-xs">
+              <div class="h-2 overflow-hidden rounded-full bg-gray-100 dark:bg-dark-700">
+                <div class="flex h-full">
+                  <div
+                    class="bg-emerald-500"
+                    :style="{ width: accountCountWidth(row.active_account_count, row.account_count) }"
+                    :title="accountCountTitle(t('admin.groups.accountsAvailable'), row.active_account_count)"
+                  />
+                  <div
+                    class="bg-amber-500"
+                    :style="{ width: accountCountWidth(row.rate_limited_account_count, row.account_count) }"
+                    :title="accountCountTitle(t('admin.groups.accountsRateLimited'), row.rate_limited_account_count)"
+                  />
+                  <div
+                    class="bg-red-500"
+                    :style="{ width: accountCountWidth(row.error_account_count, row.account_count) }"
+                    :title="accountCountTitle(t('admin.groups.accountsError'), row.error_account_count)"
+                  />
+                </div>
               </div>
-              <div v-if="row.rate_limited_account_count">
-                <span class="text-gray-500 dark:text-gray-400">{{
-                  t("admin.groups.accountsRateLimited")
-                }}</span>
-                <span
-                  class="ml-1 font-medium text-amber-600 dark:text-amber-400"
-                  >{{ row.rate_limited_account_count }}</span
-                >
-                <span
-                  class="ml-1 inline-flex items-center rounded bg-gray-100 px-1.5 py-0.5 font-medium text-gray-800 dark:bg-dark-600 dark:text-gray-300"
-                  >{{ t("admin.groups.accountsUnit") }}</span
-                >
+              <div class="grid grid-cols-3 gap-2">
+                <div>
+                  <div class="text-gray-500 dark:text-gray-400">{{ t("admin.groups.accountsAvailable") }}</div>
+                  <div class="font-medium text-emerald-600 dark:text-emerald-400">{{ row.active_account_count || 0 }}</div>
+                </div>
+                <div>
+                  <div class="text-gray-500 dark:text-gray-400">{{ t("admin.groups.accountsRateLimited") }}</div>
+                  <div class="font-medium text-amber-600 dark:text-amber-400">{{ row.rate_limited_account_count || 0 }}</div>
+                </div>
+                <div>
+                  <div class="text-gray-500 dark:text-gray-400">{{ t("admin.groups.accountsError") }}</div>
+                  <div class="font-medium text-red-600 dark:text-red-400">{{ row.error_account_count || 0 }}</div>
+                </div>
               </div>
-              <div>
-                <span class="text-gray-500 dark:text-gray-400">{{
-                  t("admin.groups.accountsTotal")
-                }}</span>
-                <span
-                  class="ml-1 font-medium text-gray-700 dark:text-gray-300"
-                  >{{ row.account_count || 0 }}</span
-                >
-                <span
-                  class="ml-1 inline-flex items-center rounded bg-gray-100 px-1.5 py-0.5 font-medium text-gray-800 dark:bg-dark-600 dark:text-gray-300"
-                  >{{ t("admin.groups.accountsUnit") }}</span
-                >
+              <div class="text-[11px] text-gray-500 dark:text-gray-400">
+                {{ t("admin.groups.accountsTotal") }} {{ row.account_count || 0 }} {{ t("admin.groups.accountsUnit") }}
               </div>
             </div>
           </template>
@@ -3817,6 +3814,16 @@ const formatCost = (cost: number): string => {
   if (cost >= 1000) return cost.toFixed(0);
   if (cost >= 100) return cost.toFixed(1);
   return cost.toFixed(2);
+};
+
+const accountCountWidth = (value: number | undefined, total: number | undefined): string => {
+  const safeTotal = Math.max(0, Number(total || 0));
+  if (safeTotal === 0) return "0%";
+  return `${Math.min(100, Math.max(0, (Number(value || 0) / safeTotal) * 100))}%`;
+};
+
+const accountCountTitle = (label: string, value: number | undefined): string => {
+  return `${label} ${Number(value || 0)}`;
 };
 
 const loadUsageSummary = async () => {

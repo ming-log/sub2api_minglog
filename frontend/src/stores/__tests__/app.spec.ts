@@ -3,11 +3,6 @@ import { setActivePinia, createPinia } from 'pinia'
 import { useAppStore } from '@/stores/app'
 import { getPublicSettings } from '@/api/auth'
 
-// Mock API 模块
-vi.mock('@/api/admin/system', () => ({
-  checkUpdates: vi.fn(),
-}))
-
 vi.mock('@/api/auth', () => ({
   getPublicSettings: vi.fn(),
 }))
@@ -257,7 +252,6 @@ describe('useAppStore', () => {
       windowAny.__APP_CONFIG__ = {
         site_name: 'TestSite',
         site_logo: '/logo.png',
-        version: '1.0.0',
         contact_info: 'test@test.com',
         api_base_url: 'https://api.test.com',
         doc_url: 'https://docs.test.com',
@@ -269,7 +263,6 @@ describe('useAppStore', () => {
       expect(result).toBe(true)
       expect(store.siteName).toBe('TestSite')
       expect(store.siteLogo).toBe('/logo.png')
-      expect(store.siteVersion).toBe('1.0.0')
       expect(store.publicSettingsLoaded).toBe(true)
     })
 
@@ -320,8 +313,7 @@ describe('useAppStore', () => {
         custom_menu_items: [],
         custom_endpoints: [],
         linuxdo_oauth_enabled: false,
-        backend_mode_enabled: false,
-        version: '1.0.0'
+        backend_mode_enabled: false
       })
 
       const store = useAppStore()

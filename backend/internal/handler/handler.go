@@ -22,7 +22,6 @@ type AdminHandlers struct {
 	Promo                  *admin.PromoHandler
 	Setting                *admin.SettingHandler
 	Ops                    *admin.OpsHandler
-	System                 *admin.SystemHandler
 	Subscription           *admin.SubscriptionHandler
 	Usage                  *admin.UsageHandler
 	UserAttribute          *admin.UserAttributeHandler
@@ -56,10 +55,4 @@ type Handlers struct {
 	Payment          *PaymentHandler
 	PaymentWebhook   *PaymentWebhookHandler
 	AvailableChannel *AvailableChannelHandler
-}
-
-// BuildInfo contains build-time information
-type BuildInfo struct {
-	Version   string
-	BuildType string // "source" for manual builds, "release" for CI builds
 }

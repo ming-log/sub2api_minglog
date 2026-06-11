@@ -897,7 +897,7 @@ router.onError((error) => {
     // Allow reload if never attempted or more than 10 seconds ago
     if (!lastReload || now - parseInt(lastReload) > 10000) {
       sessionStorage.setItem(reloadKey, now.toString())
-      console.warn('Chunk load error detected, reloading page to fetch latest version...')
+      console.warn('Chunk load error detected, reloading page to fetch fresh assets...')
       window.location.reload()
     } else {
       console.error('Chunk load error persists after reload. Please clear browser cache.')

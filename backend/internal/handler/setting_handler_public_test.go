@@ -61,7 +61,7 @@ func TestSettingHandler_GetPublicSettings_ExposesForceEmailOnThirdPartySignup(t 
 			service.SettingKeyForceEmailOnThirdPartySignup: "true",
 		},
 	}
-	h := NewSettingHandler(service.NewSettingService(repo, &config.Config{}), "test-version")
+	h := NewSettingHandler(service.NewSettingService(repo, &config.Config{}))
 
 	recorder := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(recorder)

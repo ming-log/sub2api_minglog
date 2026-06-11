@@ -40,6 +40,19 @@
         />
       </div>
 
+      <div class="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label class="input-label">{{ t('admin.accounts.dataImportConcurrency') }}</label>
+          <input v-model.number="concurrency" type="number" min="0" class="input" />
+        </div>
+        <div>
+          <label class="input-label">{{ t('admin.accounts.dataImportPriority') }}</label>
+          <input v-model.number="priority" type="number" min="0" class="input" />
+        </div>
+      </div>
+
+      <GroupSelector v-model="groupIds" :groups="groups" searchable />
+
       <div
         v-if="result"
         class="space-y-2 rounded-xl border border-gray-200 p-4 dark:border-dark-700"
@@ -88,9 +101,10 @@
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import BaseDialog from '@/components/common/BaseDialog.vue'
+import GroupSelector from '@/components/common/GroupSelector.vue'
 import { adminAPI } from '@/api/admin'
 import { useAppStore } from '@/stores/app'
-import type { AdminDataImportResult } from '@/types'
+import type { AdminDataImportResult, AdminGroup } from '@/types'
 
 interface Props {
   show: boolean
@@ -110,6 +124,10 @@ const appStore = useAppStore()
 const importing = ref(false)
 const file = ref<File | null>(null)
 const result = ref<AdminDataImportResult | null>(null)
+const concurrency = ref(3)
+const priority = ref(50)
+const groupIds = ref<number[]>([])
+const groups = ref<AdminGroup[]>([])
 
 const fileInput = ref<HTMLInputElement | null>(null)
 const fileName = computed(() => file.value?.name || '')
@@ -122,12 +140,24 @@ watch(
     if (open) {
       file.value = null
       result.value = null
+      concurrency.value = 3
+      priority.value = 50
+      groupIds.value = []
       if (fileInput.value) {
         fileInput.value.value = ''
       }
+      void loadGroups()
     }
   }
 )
+
+const loadGroups = async () => {
+  try {
+    groups.value = await adminAPI.groups.getAll()
+  } catch (error) {
+    console.error('Failed to load groups:', error)
+  }
+}
 
 const openFilePicker = () => {
   fileInput.value?.click()
@@ -174,13 +204,17 @@ const handleImport = async () => {
 
     const res = await adminAPI.accounts.importData({
       data: dataPayload,
-      skip_default_group_bind: true
+      skip_default_group_bind: groupIds.value.length === 0,
+      concurrency: concurrency.value,
+      priority: priority.value,
+      group_ids: groupIds.value
     })
 
     result.value = res
 
     const msgParams: Record<string, unknown> = {
       account_created: res.account_created,
+      account_updated: res.account_updated,
       account_failed: res.account_failed,
       proxy_created: res.proxy_created,
       proxy_reused: res.proxy_reused,

@@ -135,9 +135,9 @@ security:
     # 允许代理探测时跳过 TLS 证书验证（仅用于调试）
     insecure_skip_verify: false
   proxy_fallback:
-    # Allow auxiliary services (update check, pricing data) to fallback to direct
+    # Allow auxiliary services (pricing data) to fallback to direct
     # connection when proxy initialization fails. Does NOT affect AI gateway connections.
-    # 辅助服务（更新检查、定价数据拉取）代理初始化失败时是否允许回退直连。
+    # 辅助服务（定价数据拉取）代理初始化失败时是否允许回退直连。
     # 不影响 AI 账号网关连接。默认 false：fail-fast 防止 IP 泄露。
     allow_direct_on_error: false
 
@@ -743,8 +743,6 @@ idempotency:
   observe_only: true
   # 关键写接口幂等记录 TTL（秒）
   default_ttl_seconds: 86400
-  # 系统操作接口（update/rollback/restart）幂等记录 TTL（秒）
-  system_operation_ttl_seconds: 3600
   # processing 锁超时（秒）
   processing_timeout_seconds: 30
   # 可重试失败退避窗口（秒）
@@ -1103,11 +1101,11 @@ gemini:
         cooldown_minutes: 5
 
 # =============================================================================
-# Update Configuration (在线更新配置)
+# Remote Data Configuration (远程数据配置)
 # =============================================================================
 update:
-  # Proxy URL for accessing GitHub (used for online updates and pricing data)
-  # 用于访问 GitHub 的代理地址（用于在线更新和定价数据获取）
+  # Proxy URL for accessing GitHub-hosted pricing data
+  # 用于访问 GitHub 托管价格数据的代理地址
   # Supports: http, https, socks5, socks5h
   # Examples:
   #   - HTTP proxy: "http://127.0.0.1:7890"

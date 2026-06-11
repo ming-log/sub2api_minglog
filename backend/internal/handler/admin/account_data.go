@@ -68,6 +68,9 @@ type DataAccount struct {
 type DataImportRequest struct {
 	Data                 DataPayload `json:"data"`
 	SkipDefaultGroupBind *bool       `json:"skip_default_group_bind"`
+	Concurrency          *int        `json:"concurrency"`
+	Priority             *int        `json:"priority"`
+	GroupIDs             []int64     `json:"group_ids"`
 }
 
 type DataImportResult struct {
@@ -75,6 +78,7 @@ type DataImportResult struct {
 	ProxyReused    int               `json:"proxy_reused"`
 	ProxyFailed    int               `json:"proxy_failed"`
 	AccountCreated int               `json:"account_created"`
+	AccountUpdated int               `json:"account_updated"`
 	AccountFailed  int               `json:"account_failed"`
 	Errors         []DataImportError `json:"errors,omitempty"`
 }
@@ -372,6 +376,12 @@ func (h *AccountHandler) importData(ctx context.Context, req DataImportRequest) 
 
 	// 收集需要异步设置隐私的 Antigravity OAuth 账号
 	var privacyAccounts []*service.Account
+	existingAccounts, err := h.listAccountsFiltered(ctx, "", "", "", "", 0, "", "created_at", "desc")
+	if err != nil {
+		return result, err
+	}
+	accountIndex := buildDataAccountIndex(existingAccounts)
+	overrideGroupIDs := append([]int64(nil), req.GroupIDs...)
 
 	for i := range dataPayload.Accounts {
 		item := dataPayload.Accounts[i]
@@ -402,6 +412,22 @@ func (h *AccountHandler) importData(ctx context.Context, req DataImportRequest) 
 		}
 
 		enrichCredentialsFromIDToken(&item)
+		identityKeys := dataAccountIdentityKeys(item)
+		if len(identityKeys) == 0 {
+			identityKeys = []string{dataAccountFallbackIdentity(item)}
+		}
+		concurrency := item.Concurrency
+		if req.Concurrency != nil {
+			concurrency = *req.Concurrency
+		}
+		priority := item.Priority
+		if req.Priority != nil {
+			priority = *req.Priority
+		}
+		var groupIDs []int64
+		if len(overrideGroupIDs) > 0 {
+			groupIDs = overrideGroupIDs
+		}
 
 		accountInput := &service.CreateAccountInput{
 			Name:                 item.Name,
@@ -411,13 +437,54 @@ func (h *AccountHandler) importData(ctx context.Context, req DataImportRequest) 
 			Credentials:          item.Credentials,
 			Extra:                item.Extra,
 			ProxyID:              proxyID,
-			Concurrency:          item.Concurrency,
-			Priority:             item.Priority,
+			Concurrency:          concurrency,
+			Priority:             priority,
 			RateMultiplier:       item.RateMultiplier,
-			GroupIDs:             nil,
+			GroupIDs:             groupIDs,
 			ExpiresAt:            item.ExpiresAt,
 			AutoPauseOnExpired:   item.AutoPauseOnExpired,
 			SkipDefaultGroupBind: skipDefaultGroupBind,
+		}
+
+		if existing := accountIndex.Find(identityKeys); existing != nil {
+			updateInput := &service.UpdateAccountInput{
+				Name:               item.Name,
+				Notes:              item.Notes,
+				Type:               item.Type,
+				Credentials:        item.Credentials,
+				Extra:              item.Extra,
+				ProxyID:            proxyID,
+				Concurrency:        &concurrency,
+				Priority:           &priority,
+				RateMultiplier:     item.RateMultiplier,
+				ExpiresAt:          item.ExpiresAt,
+				AutoPauseOnExpired: item.AutoPauseOnExpired,
+			}
+			if len(groupIDs) > 0 {
+				ids := append([]int64(nil), groupIDs...)
+				updateInput.GroupIDs = &ids
+			}
+			updated, updateErr := h.adminService.UpdateAccount(ctx, existing.ID, updateInput)
+			if updateErr != nil {
+				result.AccountFailed++
+				result.Errors = append(result.Errors, DataImportError{
+					Kind:    "account",
+					Name:    item.Name,
+					Message: updateErr.Error(),
+				})
+				continue
+			}
+			if h.tokenCacheInvalidator != nil && updated != nil {
+				_ = h.tokenCacheInvalidator.InvalidateToken(ctx, updated)
+			}
+			if updated != nil {
+				accountIndex.Add(*updated)
+				if updated.Platform == service.PlatformAntigravity && updated.Type == service.AccountTypeOAuth {
+					privacyAccounts = append(privacyAccounts, updated)
+				}
+			}
+			result.AccountUpdated++
+			continue
 		}
 
 		created, err := h.adminService.CreateAccount(ctx, accountInput)
@@ -434,6 +501,7 @@ func (h *AccountHandler) importData(ctx context.Context, req DataImportRequest) 
 		if created.Platform == service.PlatformAntigravity && created.Type == service.AccountTypeOAuth {
 			privacyAccounts = append(privacyAccounts, created)
 		}
+		accountIndex.Add(*created)
 		result.AccountCreated++
 	}
 
@@ -734,6 +802,94 @@ func enrichCredentialsFromIDToken(item *DataAccount) {
 	setIfMissing("chatgpt_account_id", userInfo.ChatGPTAccountID)
 	setIfMissing("chatgpt_user_id", userInfo.ChatGPTUserID)
 	setIfMissing("organization_id", userInfo.OrganizationID)
+}
+
+type dataAccountIndex struct {
+	byKey map[string]*service.Account
+}
+
+func buildDataAccountIndex(accounts []service.Account) *dataAccountIndex {
+	idx := &dataAccountIndex{byKey: make(map[string]*service.Account)}
+	for i := range accounts {
+		idx.Add(accounts[i])
+	}
+	return idx
+}
+
+func (idx *dataAccountIndex) Add(account service.Account) {
+	if idx == nil {
+		return
+	}
+	acc := account
+	for _, key := range serviceAccountIdentityKeys(acc.Platform, acc.Type, acc.Credentials) {
+		idx.byKey[key] = &acc
+	}
+}
+
+func (idx *dataAccountIndex) Find(keys []string) *service.Account {
+	if idx == nil {
+		return nil
+	}
+	for _, key := range keys {
+		if acc := idx.byKey[key]; acc != nil {
+			return acc
+		}
+	}
+	return nil
+}
+
+func dataAccountIdentityKeys(item DataAccount) []string {
+	return serviceAccountIdentityKeys(item.Platform, item.Type, item.Credentials)
+}
+
+func serviceAccountIdentityKeys(platform, accountType string, credentials map[string]any) []string {
+	platform = strings.ToLower(strings.TrimSpace(platform))
+	accountType = strings.ToLower(strings.TrimSpace(accountType))
+	if platform == "" || accountType == "" || len(credentials) == 0 {
+		return nil
+	}
+
+	keys := make([]string, 0, 4)
+	add := func(field string) {
+		value := strings.TrimSpace(stringFromAny(credentials[field]))
+		if value != "" {
+			keys = append(keys, platform+"|"+accountType+"|"+field+"|"+value)
+		}
+	}
+
+	switch accountType {
+	case service.AccountTypeAPIKey, service.AccountTypeUpstream, service.AccountTypeBedrock, service.AccountTypeServiceAccount:
+		add("api_key")
+		add("access_key_id")
+		add("project_id")
+	case service.AccountTypeOAuth, service.AccountTypeSetupToken:
+		add("chatgpt_account_id")
+		add("chatgpt_user_id")
+		add("email")
+		add("refresh_token")
+	}
+	if len(keys) == 0 {
+		add("access_token")
+		add("token")
+	}
+	return keys
+}
+
+func dataAccountFallbackIdentity(item DataAccount) string {
+	return strings.ToLower(strings.TrimSpace(item.Platform)) + "|" +
+		strings.ToLower(strings.TrimSpace(item.Type)) + "|name|" +
+		strings.ToLower(strings.TrimSpace(item.Name))
+}
+
+func stringFromAny(value any) string {
+	switch v := value.(type) {
+	case string:
+		return v
+	case fmt.Stringer:
+		return v.String()
+	default:
+		return strings.TrimSpace(fmt.Sprint(v))
+	}
 }
 
 func normalizeProxyStatus(status string) string {
