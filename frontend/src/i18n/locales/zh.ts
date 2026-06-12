@@ -3142,6 +3142,7 @@ export default {
       // Filter options
       allPlatforms: '全部平台',
       allTypes: '全部类型',
+      allAccountPlanTypes: '全部账号类型',
       allStatus: '全部状态',
       allGroups: '全部分组',
       ungroupedGroup: '未分配分组',

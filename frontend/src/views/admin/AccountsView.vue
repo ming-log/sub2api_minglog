@@ -7,6 +7,7 @@
             v-model:searchQuery="params.search"
             :filters="params"
             :groups="groups"
+            :account-plan-types="accountPlanTypes"
             @update:filters="(newFilters) => Object.assign(params, newFilters)"
             @change="debouncedReload"
             @update:searchQuery="debouncedReload"
@@ -460,6 +461,7 @@ type AccountBulkEditTarget =
         group?: string
         search?: string
         privacy_mode?: string
+        account_plan_type?: string
         sort_by?: string
         sort_order?: AccountSortOrder
       }
@@ -750,12 +752,30 @@ const {
     type: '',
     status: '',
     privacy_mode: '',
+    account_plan_type: '',
     group: '',
     search: '',
     sort_by: sortState.sort_by,
     sort_order: sortState.sort_order
   }
 })
+
+const accountPlanTypes = ref<string[]>([])
+
+const loadAccountPlanTypes = async () => {
+  try {
+    accountPlanTypes.value = await adminAPI.accounts.listPlanTypes(params.platform || undefined)
+    if (params.account_plan_type && !accountPlanTypes.value.includes(params.account_plan_type)) {
+      params.account_plan_type = ''
+    }
+  } catch (error) {
+    console.error('Failed to load account plan types:', error)
+    accountPlanTypes.value = []
+    if (params.account_plan_type) {
+      params.account_plan_type = ''
+    }
+  }
+}
 
 const {
   selectedIds: selIds,
@@ -859,6 +879,13 @@ watch(loading, (isLoading, wasLoading) => {
       console.error('Failed to refresh account today stats after table load:', error)
     })
   }
+})
+
+watch(() => params.platform, () => {
+  if (params.account_plan_type) {
+    params.account_plan_type = ''
+  }
+  loadAccountPlanTypes()
 })
 
 const isAnyModalOpen = computed(() => {
@@ -1372,6 +1399,7 @@ const buildBulkEditFilterSnapshot = () => {
     group: typeof rawParams.group === 'string' ? rawParams.group : '',
     search: typeof rawParams.search === 'string' ? rawParams.search : '',
     privacy_mode: typeof rawParams.privacy_mode === 'string' ? rawParams.privacy_mode : '',
+    account_plan_type: typeof rawParams.account_plan_type === 'string' ? rawParams.account_plan_type : '',
     sort_by: typeof rawParams.sort_by === 'string' ? rawParams.sort_by : '',
     sort_order: sortOrder
   }
@@ -1413,7 +1441,7 @@ const handleBulkUpdated = () => {
   clearSelection()
   reload()
 }
-const handleDataImported = () => { showImportData.value = false; reload() }
+const handleDataImported = () => { showImportData.value = false; loadAccountPlanTypes(); reload() }
 const ACCOUNT_UNGROUPED_GROUP_QUERY_VALUE = 'ungrouped'
 const ACCOUNT_PRIVACY_MODE_UNSET_QUERY_VALUE = '__unset__'
 const buildAccountQueryFilters = () => ({
@@ -1422,6 +1450,7 @@ const buildAccountQueryFilters = () => ({
   status: params.status || '',
   group: params.group || '',
   privacy_mode: params.privacy_mode || '',
+  account_plan_type: params.account_plan_type || '',
   search: params.search || '',
   sort_by: sortState.sort_by,
   sort_order: sortState.sort_order
@@ -1464,6 +1493,10 @@ const accountMatchesCurrentFilters = (account: Account) => {
     } else if (privacyMode !== filters.privacy_mode) {
       return false
     }
+  }
+  if (filters.account_plan_type) {
+    const planType = typeof account.credentials?.plan_type === 'string' ? account.credentials.plan_type.trim() : ''
+    if (planType !== filters.account_plan_type) return false
   }
   const search = String(filters.search || '').trim().toLowerCase()
   if (search && !account.name.toLowerCase().includes(search)) return false
@@ -1687,6 +1720,7 @@ const handleClickOutside = (event: MouseEvent) => {
 
 onMounted(async () => {
   load()
+  loadAccountPlanTypes()
   try {
     const [p, g] = await Promise.all([adminAPI.proxies.getAll(), adminAPI.groups.getAll()])
     proxies.value = p

@@ -462,10 +462,53 @@ func (r *accountRepository) Delete(ctx context.Context, id int64) error {
 }
 
 func (r *accountRepository) List(ctx context.Context, params pagination.PaginationParams) ([]service.Account, *pagination.PaginationResult, error) {
-	return r.ListWithFilters(ctx, params, "", "", "", "", 0, "")
+	return r.ListWithFilters(ctx, params, "", "", "", "", 0, "", "")
 }
 
-func (r *accountRepository) ListWithFilters(ctx context.Context, params pagination.PaginationParams, platform, accountType, status, search string, groupID int64, privacyMode string) ([]service.Account, *pagination.PaginationResult, error) {
+func (r *accountRepository) ListPlanTypes(ctx context.Context, platform string) ([]string, error) {
+	platform = strings.TrimSpace(platform)
+	query := `
+		SELECT plan_type
+		FROM (
+			SELECT DISTINCT btrim(credentials->>'plan_type') AS plan_type
+			FROM accounts
+			WHERE deleted_at IS NULL
+				AND btrim(COALESCE(credentials->>'plan_type', '')) <> ''
+	`
+	args := []any{}
+	if platform != "" {
+		args = append(args, platform)
+		query += " AND platform = $1"
+	}
+	query += `
+		) AS distinct_plan_types
+		ORDER BY lower(plan_type), plan_type
+	`
+
+	rows, err := r.sql.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	planTypes := make([]string, 0)
+	for rows.Next() {
+		var planType string
+		if err := rows.Scan(&planType); err != nil {
+			return nil, err
+		}
+		planType = strings.TrimSpace(planType)
+		if planType != "" {
+			planTypes = append(planTypes, planType)
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return planTypes, nil
+}
+
+func (r *accountRepository) ListWithFilters(ctx context.Context, params pagination.PaginationParams, platform, accountType, status, search string, groupID int64, privacyMode, accountPlanType string) ([]service.Account, *pagination.PaginationResult, error) {
 	q := r.client.Account.Query()
 
 	if platform != "" {
@@ -555,6 +598,11 @@ func (r *accountRepository) ListWithFilters(ctx context.Context, params paginati
 			default:
 				s.Where(sqljson.ValueEQ(dbaccount.FieldExtra, privacyMode, path))
 			}
+		}))
+	}
+	if accountPlanType != "" {
+		q = q.Where(dbpredicate.Account(func(s *entsql.Selector) {
+			s.Where(sqljson.ValueEQ(dbaccount.FieldCredentials, accountPlanType, sqljson.Path("plan_type")))
 		}))
 	}
 

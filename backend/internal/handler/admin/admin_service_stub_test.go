@@ -37,15 +37,16 @@ type stubAdminService struct {
 		groupIDs  []int64
 	}
 	lastListAccounts struct {
-		platform    string
-		accountType string
-		status      string
-		search      string
-		groupID     int64
-		privacyMode string
-		sortBy      string
-		sortOrder   string
-		calls       int
+		platform        string
+		accountType     string
+		status          string
+		search          string
+		groupID         int64
+		privacyMode     string
+		accountPlanType string
+		sortBy          string
+		sortOrder       string
+		calls           int
 	}
 	lastListUsers struct {
 		page      int
@@ -316,17 +317,22 @@ func (s *stubAdminService) BatchSetGroupRPMOverrides(_ context.Context, _ int64,
 	return nil
 }
 
-func (s *stubAdminService) ListAccounts(ctx context.Context, page, pageSize int, platform, accountType, status, search string, groupID int64, privacyMode string, sortBy, sortOrder string) ([]service.Account, int64, error) {
+func (s *stubAdminService) ListAccounts(ctx context.Context, page, pageSize int, platform, accountType, status, search string, groupID int64, privacyMode, accountPlanType string, sortBy, sortOrder string) ([]service.Account, int64, error) {
 	s.lastListAccounts.platform = platform
 	s.lastListAccounts.accountType = accountType
 	s.lastListAccounts.status = status
 	s.lastListAccounts.search = search
 	s.lastListAccounts.groupID = groupID
 	s.lastListAccounts.privacyMode = privacyMode
+	s.lastListAccounts.accountPlanType = accountPlanType
 	s.lastListAccounts.sortBy = sortBy
 	s.lastListAccounts.sortOrder = sortOrder
 	s.lastListAccounts.calls++
 	return s.accounts, int64(len(s.accounts)), nil
+}
+
+func (s *stubAdminService) ListAccountPlanTypes(context.Context, string) ([]string, error) {
+	return nil, nil
 }
 
 func (s *stubAdminService) GetAccount(ctx context.Context, id int64) (*service.Account, error) {

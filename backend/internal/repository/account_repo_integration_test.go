@@ -238,16 +238,17 @@ func (s *AccountRepoSuite) TestList() {
 
 func (s *AccountRepoSuite) TestListWithFilters() {
 	tests := []struct {
-		name        string
-		setup       func(client *dbent.Client)
-		platform    string
-		accType     string
-		status      string
-		search      string
-		groupID     int64
-		privacyMode string
-		wantCount   int
-		validate    func(accounts []service.Account)
+		name            string
+		setup           func(client *dbent.Client)
+		platform        string
+		accType         string
+		status          string
+		search          string
+		groupID         int64
+		privacyMode     string
+		accountPlanType string
+		wantCount       int
+		validate        func(accounts []service.Account)
 	}{
 		{
 			name: "filter_by_platform",
@@ -433,6 +434,19 @@ func (s *AccountRepoSuite) TestListWithFilters() {
 				s.ElementsMatch([]string{"privacy-unset", "privacy-empty"}, names)
 			},
 		},
+		{
+			name: "filter_by_account_plan_type",
+			setup: func(client *dbent.Client) {
+				mustCreateAccount(s.T(), client, &service.Account{Name: "openai-plus", Platform: service.PlatformOpenAI, Credentials: map[string]any{"plan_type": "Plus"}})
+				mustCreateAccount(s.T(), client, &service.Account{Name: "openai-free", Platform: service.PlatformOpenAI, Credentials: map[string]any{"plan_type": "Free"}})
+				mustCreateAccount(s.T(), client, &service.Account{Name: "openai-unset", Platform: service.PlatformOpenAI, Credentials: nil})
+			},
+			accountPlanType: "Plus",
+			wantCount:       1,
+			validate: func(accounts []service.Account) {
+				s.Require().Equal("openai-plus", accounts[0].Name)
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -445,7 +459,7 @@ func (s *AccountRepoSuite) TestListWithFilters() {
 
 			tt.setup(client)
 
-			accounts, _, err := repo.ListWithFilters(ctx, pagination.PaginationParams{Page: 1, PageSize: 10}, tt.platform, tt.accType, tt.status, tt.search, tt.groupID, tt.privacyMode)
+			accounts, _, err := repo.ListWithFilters(ctx, pagination.PaginationParams{Page: 1, PageSize: 10}, tt.platform, tt.accType, tt.status, tt.search, tt.groupID, tt.privacyMode, tt.accountPlanType)
 			s.Require().NoError(err)
 			s.Require().Len(accounts, tt.wantCount)
 			if tt.validate != nil {
@@ -453,6 +467,22 @@ func (s *AccountRepoSuite) TestListWithFilters() {
 			}
 		})
 	}
+}
+
+func (s *AccountRepoSuite) TestListPlanTypes() {
+	mustCreateAccount(s.T(), s.client, &service.Account{Name: "openai-plus", Platform: service.PlatformOpenAI, Credentials: map[string]any{"plan_type": "Plus"}})
+	mustCreateAccount(s.T(), s.client, &service.Account{Name: "openai-free", Platform: service.PlatformOpenAI, Credentials: map[string]any{"plan_type": "Free"}})
+	mustCreateAccount(s.T(), s.client, &service.Account{Name: "openai-plus-duplicate", Platform: service.PlatformOpenAI, Credentials: map[string]any{"plan_type": " Plus "}})
+	mustCreateAccount(s.T(), s.client, &service.Account{Name: "openai-empty", Platform: service.PlatformOpenAI, Credentials: map[string]any{"plan_type": " "}})
+	mustCreateAccount(s.T(), s.client, &service.Account{Name: "anthropic-team", Platform: service.PlatformAnthropic, Credentials: map[string]any{"plan_type": "Team"}})
+
+	openAIPlanTypes, err := s.repo.ListPlanTypes(s.ctx, service.PlatformOpenAI)
+	s.Require().NoError(err)
+	s.Require().Equal([]string{"Free", "Plus"}, openAIPlanTypes)
+
+	allPlanTypes, err := s.repo.ListPlanTypes(s.ctx, "")
+	s.Require().NoError(err)
+	s.Require().Equal([]string{"Free", "Plus", "Team"}, allPlanTypes)
 }
 
 // --- ListByGroup / ListActive / ListByPlatform ---
@@ -512,7 +542,7 @@ func (s *AccountRepoSuite) TestPreload_And_VirtualFields() {
 	s.Require().Len(got.Groups, 1, "expected Groups to be populated")
 	s.Require().Equal(group.ID, got.Groups[0].ID)
 
-	accounts, page, err := s.repo.ListWithFilters(s.ctx, pagination.PaginationParams{Page: 1, PageSize: 10}, "", "", "", "acc", 0, "")
+	accounts, page, err := s.repo.ListWithFilters(s.ctx, pagination.PaginationParams{Page: 1, PageSize: 10}, "", "", "", "acc", 0, "", "")
 	s.Require().NoError(err, "ListWithFilters")
 	s.Require().Equal(int64(1), page.Total)
 	s.Require().Len(accounts, 1)

@@ -3063,6 +3063,7 @@ export default {
       notesHint: 'Notes are optional',
       allPlatforms: 'All Platforms',
       allTypes: 'All Types',
+      allAccountPlanTypes: 'All Account Plans',
       allStatus: 'All Status',
       allGroups: 'All Groups',
       ungroupedGroup: 'Ungrouped',

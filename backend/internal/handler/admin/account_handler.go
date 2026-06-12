@@ -151,12 +151,13 @@ type BulkUpdateAccountsRequest struct {
 }
 
 type BulkUpdateAccountFilters struct {
-	Platform    string `json:"platform"`
-	Type        string `json:"type"`
-	Status      string `json:"status"`
-	Group       string `json:"group"`
-	Search      string `json:"search"`
-	PrivacyMode string `json:"privacy_mode"`
+	Platform        string `json:"platform"`
+	Type            string `json:"type"`
+	Status          string `json:"status"`
+	Group           string `json:"group"`
+	Search          string `json:"search"`
+	PrivacyMode     string `json:"privacy_mode"`
+	AccountPlanType string `json:"account_plan_type"`
 }
 
 // CheckMixedChannelRequest represents check mixed channel risk request
@@ -231,6 +232,7 @@ func (h *AccountHandler) List(c *gin.Context) {
 	status := c.Query("status")
 	search := c.Query("search")
 	privacyMode := strings.TrimSpace(c.Query("privacy_mode"))
+	accountPlanType := strings.TrimSpace(c.Query("account_plan_type"))
 	sortBy := c.DefaultQuery("sort_by", "name")
 	sortOrder := c.DefaultQuery("sort_order", "asc")
 	// 标准化和验证 search 参数
@@ -258,7 +260,7 @@ func (h *AccountHandler) List(c *gin.Context) {
 		}
 	}
 
-	accounts, total, err := h.adminService.ListAccounts(c.Request.Context(), page, pageSize, platform, accountType, status, search, groupID, privacyMode, sortBy, sortOrder)
+	accounts, total, err := h.adminService.ListAccounts(c.Request.Context(), page, pageSize, platform, accountType, status, search, groupID, privacyMode, accountPlanType, sortBy, sortOrder)
 	if err != nil {
 		response.ErrorFrom(c, err)
 		return
@@ -391,6 +393,18 @@ func (h *AccountHandler) List(c *gin.Context) {
 	}
 
 	response.Paginated(c, result, total, page, pageSize)
+}
+
+// ListPlanTypes returns distinct account credentials.plan_type values.
+// GET /api/v1/admin/accounts/plan-types
+func (h *AccountHandler) ListPlanTypes(c *gin.Context) {
+	platform := strings.TrimSpace(c.Query("platform"))
+	planTypes, err := h.adminService.ListAccountPlanTypes(c.Request.Context(), platform)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, gin.H{"items": planTypes})
 }
 
 func buildAccountsListETag(
@@ -1598,12 +1612,13 @@ func toServiceBulkUpdateAccountFilters(filters *BulkUpdateAccountFilters) *servi
 		return nil
 	}
 	return &service.BulkUpdateAccountFilters{
-		Platform:    filters.Platform,
-		Type:        filters.Type,
-		Status:      filters.Status,
-		Group:       filters.Group,
-		Search:      filters.Search,
-		PrivacyMode: filters.PrivacyMode,
+		Platform:        filters.Platform,
+		Type:            filters.Type,
+		Status:          filters.Status,
+		Group:           filters.Group,
+		Search:          filters.Search,
+		PrivacyMode:     filters.PrivacyMode,
+		AccountPlanType: filters.AccountPlanType,
 	}
 }
 
@@ -2309,7 +2324,7 @@ func (h *AccountHandler) BatchRefreshTier(c *gin.Context) {
 	accounts := make([]*service.Account, 0)
 
 	if len(req.AccountIDs) == 0 {
-		allAccounts, _, err := h.adminService.ListAccounts(ctx, 1, 10000, "gemini", "oauth", "", "", 0, "", "name", "asc")
+		allAccounts, _, err := h.adminService.ListAccounts(ctx, 1, 10000, "gemini", "oauth", "", "", 0, "", "", "name", "asc")
 		if err != nil {
 			response.ErrorFrom(c, err)
 			return
