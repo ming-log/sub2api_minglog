@@ -215,6 +215,8 @@ type SystemSettings struct {
 	PaymentProductNameSuffix         string   `json:"payment_product_name_suffix"`
 	PaymentHelpImageURL              string   `json:"payment_help_image_url"`
 	PaymentHelpText                  string   `json:"payment_help_text"`
+	PaymentCustomTextEnabled         bool     `json:"payment_custom_text_enabled"`
+	PaymentCustomTextContent         string   `json:"payment_custom_text_content"`
 
 	// Cancel rate limit
 	PaymentCancelRateLimitEnabled bool   `json:"payment_cancel_rate_limit_enabled"`

@@ -5751,6 +5751,33 @@
                 </div>
                 <Toggle v-model="form.payment_enabled" />
               </div>
+              <div class="space-y-3 rounded-lg border border-gray-200 p-3 dark:border-dark-600">
+                <div class="flex items-center justify-between gap-3">
+                  <div>
+                    <label class="font-medium text-gray-900 dark:text-white">
+                      {{ t("admin.settings.payment.customTextEnabled") }}
+                    </label>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">
+                      {{ t("admin.settings.payment.customTextEnabledHint") }}
+                    </p>
+                  </div>
+                  <Toggle v-model="form.payment_custom_text_enabled" />
+                </div>
+                <div>
+                  <label class="input-label">{{
+                    t("admin.settings.payment.customTextContent")
+                  }}</label>
+                  <textarea
+                    v-model="form.payment_custom_text_content"
+                    rows="3"
+                    class="input"
+                    :disabled="!form.payment_custom_text_enabled"
+                    :placeholder="
+                      t('admin.settings.payment.customTextContentPlaceholder')
+                    "
+                  ></textarea>
+                </div>
+              </div>
               <template v-if="form.payment_enabled">
                 <!-- Row 1: Product name -->
                 <div class="grid grid-cols-3 gap-3">
@@ -6144,7 +6171,7 @@
                   </p>
                 </div>
                 <!-- Row 5: Help image + text -->
-                <div class="grid grid-cols-2 gap-3">
+                <div class="grid grid-cols-1 gap-3 lg:grid-cols-2">
                   <div>
                     <label class="input-label">{{
                       t("admin.settings.payment.helpImage")
@@ -7056,6 +7083,8 @@ const form = reactive<SettingsForm>({
   payment_enabled_types: [],
   payment_help_image_url: "",
   payment_help_text: "",
+  payment_custom_text_enabled: false,
+  payment_custom_text_content: "",
   payment_product_name_prefix: "",
   payment_product_name_suffix: "",
   payment_load_balance_strategy: "round-robin",
@@ -8332,6 +8361,8 @@ async function saveSettings() {
       payment_product_name_suffix: form.payment_product_name_suffix,
       payment_help_image_url: form.payment_help_image_url,
       payment_help_text: form.payment_help_text,
+      payment_custom_text_enabled: form.payment_custom_text_enabled,
+      payment_custom_text_content: form.payment_custom_text_content,
       payment_cancel_rate_limit_enabled: form.payment_cancel_rate_limit_enabled,
       payment_cancel_rate_limit_max:
         Number(form.payment_cancel_rate_limit_max) || 10,

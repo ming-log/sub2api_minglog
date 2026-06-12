@@ -29,6 +29,8 @@ export interface AdminPaymentConfig {
   product_name_suffix: string
   help_image_url: string
   help_text: string
+  custom_text_enabled: boolean
+  custom_text_content: string
 }
 
 /** Fields accepted by PUT /admin/payment/config (all optional via pointer semantics) */
@@ -47,6 +49,8 @@ export interface UpdatePaymentConfigRequest {
   product_name_suffix?: string
   help_image_url?: string
   help_text?: string
+  custom_text_enabled?: boolean
+  custom_text_content?: string
 }
 
 export const adminPaymentAPI = {

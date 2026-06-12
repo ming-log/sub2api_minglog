@@ -214,6 +214,9 @@
             <p v-if="checkout.help_text" class="text-center text-sm text-gray-500 dark:text-gray-400">{{ checkout.help_text }}</p>
           </div>
         </div>
+        <div v-if="checkout.custom_text_enabled && checkout.custom_text_content && paymentPhase === 'select'" class="card p-4">
+          <p class="whitespace-pre-wrap text-sm leading-relaxed text-gray-600 dark:text-gray-300">{{ checkout.custom_text_content }}</p>
+        </div>
       </template>
     </div>
     <!-- Renewal Plan Selection Modal -->
@@ -478,7 +481,7 @@ function onPaymentSettled() {
 // All checkout data from single API call
 const checkout = ref<CheckoutInfoResponse>({
   methods: {}, global_min: 0, global_max: 0,
-  plans: [], balance_disabled: false, balance_recharge_multiplier: 1, recharge_fee_rate: 0, help_text: '', help_image_url: '', stripe_publishable_key: '',
+  plans: [], balance_disabled: false, balance_recharge_multiplier: 1, recharge_fee_rate: 0, help_text: '', help_image_url: '', custom_text_enabled: false, custom_text_content: '', stripe_publishable_key: '',
 })
 
 const tabs = computed(() => {

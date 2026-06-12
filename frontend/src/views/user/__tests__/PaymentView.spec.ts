@@ -106,6 +106,8 @@ function checkoutInfoFixture() {
       recharge_fee_rate: 0,
       help_text: '',
       help_image_url: '',
+      custom_text_enabled: false,
+      custom_text_content: '',
       stripe_publishable_key: '',
     },
   }
@@ -179,6 +181,68 @@ function oauthOrderFixture() {
     },
   }
 }
+
+describe('PaymentView checkout description', () => {
+  beforeEach(() => {
+    routeState.path = '/purchase'
+    routeState.query = {}
+    routerReplace.mockReset().mockResolvedValue(undefined)
+    routerPush.mockReset().mockResolvedValue(undefined)
+    routerResolve.mockClear()
+    createOrder.mockReset()
+    refreshUser.mockReset()
+    fetchActiveSubscriptions.mockReset().mockResolvedValue(undefined)
+    showError.mockReset()
+    showInfo.mockReset()
+    showWarning.mockReset()
+    getCheckoutInfo.mockReset()
+    window.localStorage.clear()
+  })
+
+  it('shows custom text only when enabled', async () => {
+    getCheckoutInfo.mockResolvedValue({
+      data: {
+        ...checkoutInfoFixture().data,
+        custom_text_enabled: true,
+        custom_text_content: 'Recharge rules\nSubscription terms',
+      },
+    })
+
+    const wrapper = shallowMount(PaymentView, {
+      global: {
+        stubs: {
+          AppLayout: { template: '<div><slot /></div>' },
+          Teleport: true,
+          Transition: false,
+        },
+      },
+    })
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('Recharge rules')
+    expect(wrapper.text()).toContain('Subscription terms')
+
+    getCheckoutInfo.mockResolvedValue({
+      data: {
+        ...checkoutInfoFixture().data,
+        custom_text_enabled: false,
+        custom_text_content: 'Hidden text',
+      },
+    })
+    const hiddenWrapper = shallowMount(PaymentView, {
+      global: {
+        stubs: {
+          AppLayout: { template: '<div><slot /></div>' },
+          Teleport: true,
+          Transition: false,
+        },
+      },
+    })
+    await flushPromises()
+
+    expect(hiddenWrapper.text()).not.toContain('Hidden text')
+  })
+})
 
 describe('PaymentView WeChat JSAPI flow', () => {
   beforeEach(() => {

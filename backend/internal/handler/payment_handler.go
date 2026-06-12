@@ -140,6 +140,8 @@ func (h *PaymentHandler) GetCheckoutInfo(c *gin.Context) {
 		RechargeFeeRate:           cfg.RechargeFeeRate,
 		HelpText:                  cfg.HelpText,
 		HelpImageURL:              cfg.HelpImageURL,
+		CustomTextEnabled:         cfg.CustomTextEnabled,
+		CustomTextContent:         cfg.CustomTextContent,
 		StripePublishableKey:      cfg.StripePublishableKey,
 		AlipayForceQRCode:         cfg.AlipayForceQRCode,
 	})
@@ -155,6 +157,8 @@ type checkoutInfoResponse struct {
 	RechargeFeeRate           float64                         `json:"recharge_fee_rate"`
 	HelpText                  string                          `json:"help_text"`
 	HelpImageURL              string                          `json:"help_image_url"`
+	CustomTextEnabled         bool                            `json:"custom_text_enabled"`
+	CustomTextContent         string                          `json:"custom_text_content"`
 	StripePublishableKey      string                          `json:"stripe_publishable_key"`
 	AlipayForceQRCode         bool                            `json:"alipay_force_qrcode"`
 }

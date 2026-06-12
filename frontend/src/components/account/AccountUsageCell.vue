@@ -56,6 +56,7 @@
           label="7d"
           :utilization="usageInfo.seven_day.utilization"
           :resets-at="usageInfo.seven_day.resets_at"
+          :window-stats="usageInfo.seven_day.window_stats"
           color="emerald"
         />
 
@@ -113,7 +114,7 @@
           label="5h"
           :utilization="usageInfo.five_hour.utilization"
           :resets-at="usageInfo.five_hour.resets_at"
-          :window-stats="usageInfo.five_hour.window_stats"
+          :window-stats="openAIFiveHourWindowStats"
           :show-now-when-idle="true"
           color="indigo"
         />
@@ -122,7 +123,7 @@
           label="7d"
           :utilization="usageInfo.seven_day.utilization"
           :resets-at="usageInfo.seven_day.resets_at"
-          :window-stats="usageInfo.seven_day.window_stats"
+          :window-stats="openAISevenDayWindowStats"
           :show-now-when-idle="true"
           color="emerald"
         />
@@ -1009,6 +1010,47 @@ const isAnthropicOAuthOrSetupToken = computed(() => {
   return props.account.platform === 'anthropic' && (props.account.type === 'oauth' || props.account.type === 'setup-token')
 })
 
+const zeroWindowStats = (): WindowStats => ({
+  requests: 0,
+  tokens: 0,
+  cost: 0,
+  standard_cost: 0,
+  user_cost: 0
+})
+
+const hasWindowStats = (stats?: WindowStats | null) => {
+  return !!stats
+}
+
+const normalizeOpenAIUsageInfo = (data: AccountUsageInfo): AccountUsageInfo => {
+  if (props.account.platform !== 'openai' || props.account.type !== 'oauth') {
+    return data
+  }
+
+  const fiveHourWindowStats = data.five_hour?.window_stats
+  const sevenDayWindowStats = data.seven_day?.window_stats
+  const shouldShowWindowStats = hasWindowStats(fiveHourWindowStats) || hasWindowStats(sevenDayWindowStats)
+
+  return {
+    ...data,
+    five_hour: data.five_hour
+      ? {
+          ...data.five_hour,
+          window_stats: shouldShowWindowStats ? fiveHourWindowStats ?? zeroWindowStats() : null
+        }
+      : data.five_hour,
+    seven_day: data.seven_day
+      ? {
+          ...data.seven_day,
+          window_stats: shouldShowWindowStats ? sevenDayWindowStats ?? zeroWindowStats() : null
+        }
+      : data.seven_day
+  }
+}
+
+const openAIFiveHourWindowStats = computed(() => usageInfo.value?.five_hour?.window_stats ?? null)
+const openAISevenDayWindowStats = computed(() => usageInfo.value?.seven_day?.window_stats ?? null)
+
 const loadUsage = async (options?: { source?: 'passive' | 'active'; bypassCache?: boolean }) => {
   if (!shouldFetchUsage.value) return
 
@@ -1016,7 +1058,7 @@ const loadUsage = async (options?: { source?: 'passive' | 'active'; bypassCache?
   if (!options?.bypassCache) {
     const cached = _usageCache.get(props.account.id)
     if (cached && Date.now() - cached.ts < USAGE_CACHE_TTL) {
-      usageInfo.value = cached.data
+      usageInfo.value = normalizeOpenAIUsageInfo(cached.data)
       loading.value = false
       return
     }
@@ -1029,8 +1071,9 @@ const loadUsage = async (options?: { source?: 'passive' | 'active'; bypassCache?
     const fetchFn = () => adminAPI.accounts.getUsage(props.account.id, options?.source)
     const result = await enqueueUsageRequest(props.account, fetchFn)
     if (!unmounted.value) {
-      usageInfo.value = result
-      _usageCache.set(props.account.id, { data: result, ts: Date.now() })
+      const normalizedResult = normalizeOpenAIUsageInfo(result)
+      usageInfo.value = normalizedResult
+      _usageCache.set(props.account.id, { data: normalizedResult, ts: Date.now() })
     }
   } catch (e: any) {
     if (!unmounted.value) {
@@ -1095,7 +1138,7 @@ const attachVisibilityObserver = () => {
 const loadActiveUsage = async () => {
   activeQueryLoading.value = true
   try {
-    usageInfo.value = await adminAPI.accounts.getUsage(props.account.id, 'active', true)
+    usageInfo.value = normalizeOpenAIUsageInfo(await adminAPI.accounts.getUsage(props.account.id, 'active', true))
   } catch (e: any) {
     console.error('Failed to load active usage:', e)
   } finally {
@@ -1213,7 +1256,10 @@ watch(openAIUsageRefreshKey, (nextKey, prevKey) => {
   if (!prevKey || nextKey === prevKey) return
   if (props.account.platform !== 'openai' || props.account.type !== 'oauth') return
 
-  requestAutoLoad()
+  _usageCache.delete(props.account.id)
+  loadUsage({ bypassCache: true }).catch((e) => {
+    console.error('Failed to refresh OpenAI usage after account row update:', e)
+  })
 })
 
 watch(

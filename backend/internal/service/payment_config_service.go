@@ -29,6 +29,8 @@ const (
 	SettingProductNameSuffix   = "PRODUCT_NAME_SUFFIX"
 	SettingHelpImageURL        = "PAYMENT_HELP_IMAGE_URL"
 	SettingHelpText            = "PAYMENT_HELP_TEXT"
+	SettingCustomTextEnabled   = "PAYMENT_CUSTOM_TEXT_ENABLED"
+	SettingCustomTextContent   = "PAYMENT_CUSTOM_TEXT_CONTENT"
 	SettingCancelRateLimitOn   = "CANCEL_RATE_LIMIT_ENABLED"
 	SettingCancelRateLimitMax  = "CANCEL_RATE_LIMIT_MAX"
 	SettingCancelWindowSize    = "CANCEL_RATE_LIMIT_WINDOW"
@@ -60,6 +62,8 @@ type PaymentConfig struct {
 	ProductNameSuffix         string   `json:"product_name_suffix"`
 	HelpImageURL              string   `json:"help_image_url"`
 	HelpText                  string   `json:"help_text"`
+	CustomTextEnabled         bool     `json:"custom_text_enabled"`
+	CustomTextContent         string   `json:"custom_text_content"`
 	StripePublishableKey      string   `json:"stripe_publishable_key,omitempty"`
 
 	// Cancel rate limit settings
@@ -90,6 +94,8 @@ type UpdatePaymentConfigRequest struct {
 	ProductNameSuffix         *string  `json:"product_name_suffix"`
 	HelpImageURL              *string  `json:"help_image_url"`
 	HelpText                  *string  `json:"help_text"`
+	CustomTextEnabled         *bool    `json:"custom_text_enabled"`
+	CustomTextContent         *string  `json:"custom_text_content"`
 
 	// Cancel rate limit settings
 	CancelRateLimitEnabled *bool   `json:"cancel_rate_limit_enabled"`
@@ -206,7 +212,7 @@ func (s *PaymentConfigService) GetPaymentConfig(ctx context.Context) (*PaymentCo
 		SettingDailyRechargeLimit, SettingOrderTimeoutMinutes, SettingMaxPendingOrders,
 		SettingEnabledPaymentTypes, SettingBalancePayDisabled, SettingBalanceRechargeMult, SettingRechargeFeeRate, SettingLoadBalanceStrategy,
 		SettingProductNamePrefix, SettingProductNameSuffix,
-		SettingHelpImageURL, SettingHelpText,
+		SettingHelpImageURL, SettingHelpText, SettingCustomTextEnabled, SettingCustomTextContent,
 		SettingCancelRateLimitOn, SettingCancelRateLimitMax,
 		SettingCancelWindowSize, SettingCancelWindowUnit, SettingCancelWindowMode,
 		SettingAlipayForceQRCode,
@@ -239,6 +245,8 @@ func (s *PaymentConfigService) parsePaymentConfig(vals map[string]string) *Payme
 		ProductNameSuffix:         vals[SettingProductNameSuffix],
 		HelpImageURL:              vals[SettingHelpImageURL],
 		HelpText:                  vals[SettingHelpText],
+		CustomTextEnabled:         vals[SettingCustomTextEnabled] == "true",
+		CustomTextContent:         vals[SettingCustomTextContent],
 
 		CancelRateLimitEnabled: vals[SettingCancelRateLimitOn] == "true",
 		CancelRateLimitMax:     pcParseInt(vals[SettingCancelRateLimitMax], 10),
@@ -319,6 +327,8 @@ func (s *PaymentConfigService) UpdatePaymentConfig(ctx context.Context, req Upda
 		SettingProductNameSuffix:                 derefStr(req.ProductNameSuffix),
 		SettingHelpImageURL:                      derefStr(req.HelpImageURL),
 		SettingHelpText:                          derefStr(req.HelpText),
+		SettingCustomTextEnabled:                 formatBoolOrEmpty(req.CustomTextEnabled),
+		SettingCustomTextContent:                 derefStr(req.CustomTextContent),
 		SettingCancelRateLimitOn:                 formatBoolOrEmpty(req.CancelRateLimitEnabled),
 		SettingCancelRateLimitMax:                formatPositiveInt(req.CancelRateLimitMax),
 		SettingCancelWindowSize:                  formatPositiveInt(req.CancelRateLimitWindow),

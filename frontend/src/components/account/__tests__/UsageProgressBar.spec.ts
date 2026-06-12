@@ -96,4 +96,28 @@ describe('UsageProgressBar', () => {
     expect(wrapper.text()).toContain('usage.resetNow')
     expect(wrapper.text()).not.toContain('usage.resetPending')
   })
+
+  it('allows window usage stat badges to wrap without shrinking away', () => {
+    const wrapper = mount(UsageProgressBar, {
+      props: {
+        label: '7d',
+        utilization: 42,
+        color: 'emerald',
+        windowStats: {
+          requests: 1234,
+          tokens: 567890,
+          cost: 12.34,
+          user_cost: 56.78,
+        },
+      },
+    })
+
+    const stats = wrapper.find('.flex-wrap')
+    expect(stats.exists()).toBe(true)
+    expect(stats.classes()).toContain('min-w-0')
+    expect(wrapper.text()).toContain('req')
+    expect(wrapper.text()).toContain('A $12.34')
+    expect(wrapper.text()).toContain('U $56.78')
+    expect(wrapper.findAll('.shrink-0').length).toBeGreaterThanOrEqual(4)
+  })
 })

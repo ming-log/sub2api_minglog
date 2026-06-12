@@ -118,6 +118,8 @@ func TestParsePaymentConfig(t *testing.T) {
 			SettingLoadBalanceStrategy: "least_amount",
 			SettingProductNamePrefix:   "PRE",
 			SettingProductNameSuffix:   "SUF",
+			SettingCustomTextEnabled:   "true",
+			SettingCustomTextContent:   "Custom checkout note",
 		}
 		cfg := svc.parsePaymentConfig(vals)
 
@@ -156,6 +158,12 @@ func TestParsePaymentConfig(t *testing.T) {
 		}
 		if cfg.ProductNameSuffix != "SUF" {
 			t.Fatalf("ProductNameSuffix = %q, want %q", cfg.ProductNameSuffix, "SUF")
+		}
+		if !cfg.CustomTextEnabled {
+			t.Fatal("expected CustomTextEnabled=true")
+		}
+		if cfg.CustomTextContent != "Custom checkout note" {
+			t.Fatalf("CustomTextContent = %q, want %q", cfg.CustomTextContent, "Custom checkout note")
 		}
 	})
 
@@ -429,6 +437,28 @@ func TestUpdatePaymentConfig_PersistsVisibleMethodRouting(t *testing.T) {
 	}
 	if repo.values[SettingPaymentVisibleMethodWxpaySource] != VisibleMethodSourceOfficialWechat {
 		t.Fatalf("wxpay source = %q, want %q", repo.values[SettingPaymentVisibleMethodWxpaySource], VisibleMethodSourceOfficialWechat)
+	}
+}
+
+func TestUpdatePaymentConfig_PersistsCustomText(t *testing.T) {
+	repo := &paymentConfigSettingRepoStub{values: map[string]string{}}
+	svc := &PaymentConfigService{settingRepo: repo}
+
+	enabled := true
+	content := "Shown on checkout"
+	err := svc.UpdatePaymentConfig(context.Background(), UpdatePaymentConfigRequest{
+		CustomTextEnabled: &enabled,
+		CustomTextContent: &content,
+	})
+	if err != nil {
+		t.Fatalf("UpdatePaymentConfig returned error: %v", err)
+	}
+
+	if repo.values[SettingCustomTextEnabled] != "true" {
+		t.Fatalf("custom text enabled = %q, want true", repo.values[SettingCustomTextEnabled])
+	}
+	if repo.values[SettingCustomTextContent] != content {
+		t.Fatalf("custom text content = %q, want %q", repo.values[SettingCustomTextContent], content)
 	}
 }
 
